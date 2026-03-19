@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mishnah Yuma Flashcards</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #212529;
+            --text-sub: #6c757d;
+            --primary: #4a6fa5;
+            --secondary: #166088;
+            --accent-known: #28a745;
+            --accent-review: #ffc107;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh; 
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            padding: 1rem;
+            padding-top: calc(1rem + env(safe-area-inset-top));
+            background: var(--card-bg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            background: #eee;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .toggle-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            perspective: 1200px;
+            position: relative;
+            touch-action: pan-y;
+        }
+
+        /* Flashcard Container */
+        .card-container {
+            width: 100%;
+            max-width: 380px;
+            height: 60%;
+            max-height: 450px;
+            position: relative;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+            border-radius: 24px;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border-radius: 24px;
+            background: var(--card-bg);
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        .hebrew-text {
+            font-size: 3.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            direction: rtl;
+            line-height: 1.2;
+        }
+
+        .english-text {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--secondary);
+        }
+
+        .phonetic-text {
+            font-size: 1.1rem;
+            color: var(--text-sub);
+            font-style: italic;
+        }
+
+        /* Controls Footer */
+        .controls {
+            padding: 1.25rem;
+            padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+            background: var(--card-bg);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+            z-index: 20;
+        }
+
+        .btn {
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.1s ease, opacity 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
+
+        .btn-known { background-color: #e8f5e9; color: var(--accent-known); }
+        .btn-review { background-color: #fff3e0; color: #ef6c00; }
+        .btn-next { background-color: var(--primary); color: white; grid-column: span 2; }
+
+        /* Stats */
+        .stats {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+
+        /* Status Toast */
+        #status-msg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            display: none;
+            z-index: 1000;
+            pointer-events: none;
+            animation: fadeInOut 2s forwards;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -40%); }
+            15% { opacity: 1; transform: translate(-50%, -50%); }
+            85% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -60%); }
+        }
+
+        /* Swipe Hint */
+        .swipe-hint {
+            position: absolute;
+            bottom: 20px;
+            color: var(--text-sub);
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 360px) {
+            .hebrew-text { font-size: 2.6rem; }
+            .english-text { font-size: 1.4rem; }
+            .card-container { height: 55%; }
+        }
+
+        @media (min-width: 768px) {
+            .controls {
+                grid-template-columns: repeat(3, 1fr);
+                max-width: 600px;
+                margin: 0 auto;
+                background: transparent;
+                box-shadow: none;
+            }
+            .btn-next { grid-column: span 1; order: 3; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Mishnah Yuma</h1>
+        <div class="header-controls">
+            <button id="shuffle-toggle" class="toggle-btn">Shuffle: Off</button>
+        </div>
+    </header>
+
+    <main id="main-swipe-area">
+        <div class="stats" id="stats-display">Card 1 of 15</div>
+        
+        <div class="card-container" id="card-trigger">
+            <div class="card" id="card-element">
+                <div class="card-face card-front">
+                    <div class="hebrew-text" id="front-text">...</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="english-text" id="back-english">...</div>
+                    <div class="phonetic-text" id="back-phonetic">...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="swipe-hint">
+            <span>← Swipe Left to Skip</span>
+            <span>•</span>
+            <span>Swipe Right to Undo →</span>
+        </div>
+    </main>
+
+    <div class="controls">
+        <button class="btn btn-known" id="mark-known">Got it</button>
+        <button class="btn btn-review" id="mark-review">Review</button>
+        <button class="btn btn-next" id="next-btn">Next Card</button>
+    </div>
+
+    <div id="status-msg"></div>
+
+    <script>
+        // --- Data ---
+        const vocabulary = [
+            { id: 1, hebrew: "כֹּהֵן גָּדוֹל", english: "High Priest", phonetic: "Kohen Gadol" },
+            { id: 2, hebrew: "סְגָן", english: "Deputy", phonetic: "Segan" },
+            { id: 3, hebrew: "לִשְׁכָּה", english: "Chamber", phonetic: "Lishkah" },
+            { id: 4, hebrew: "פָּר", english: "Bull", phonetic: "Par" },
+            { id: 5, hebrew: "אַיִל", english: "Ram", phonetic: "Ayil" },
+            { id: 6, hebrew: "גּוֹרָל", english: "Lot", phonetic: "Goral" },
+            { id: 7, hebrew: "עֲזָאזֵל", english: "Scapegoat", phonetic: "Azazel" },
+            { id: 8, hebrew: "קְטֹרֶת", english: "Incense", phonetic: "Ketoret" },
+            { id: 9, hebrew: "מַחְתָּה", english: "Censer", phonetic: "Machtah" },
+            { id: 10, hebrew: "פָּרוֹכֶת", english: "Veil", phonetic: "Parokhet" },
+            { id: 11, hebrew: "וִידּוּי", english: "Confession", phonetic: "Viduya" },
+            { id: 12, hebrew: "טְבִילָה", english: "Immersion", phonetic: "Tevilah" },
+            { id: 13, hebrew: "קִדּוּשׁ יָדַיִם וְרַגְלַיִם", english: "Sanctification of hands and feet", phonetic: "Kiddush Yadayim VeRaglayim" },
+            { id: 14, hebrew: "בִּגְדֵי לָבָן", english: "White garments", phonetic: "Bigdei Lavan" },
+            { id: 15, hebrew: "בִּגְדֵי זָהָב", english: "Golden garments", phonetic: "Bigdei Zahav" }
+        ];
+
+        // --- State ---
+        let deck = [...vocabulary];
+        let currentIdx = 0;
+        let isFlipped = false;
+        let isShuffle = false;
+        let reviewIds = new Set();
+        let knownIds = new Set();
+
+        // --- Elements ---
+        const cardElement = document.getElementById('card-element');
+        const frontText = document.getElementById('front-text');
+        const backEnglish = document.getElementById('back-english');
+        const backPhonetic = document.getElementById('back-phonetic');
+        const nextBtn = document.getElementById('next-btn');
+        const statsDisplay = document.getElementById('stats-display');
+        const shuffleToggle = document.getElementById('shuffle-toggle');
+        const statusMsg = document.getElementById('status-msg');
+        const swipeArea = document.getElementById('main-swipe-area');
+
+        // --- Swipe Handling ---
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function handleSwipe() {
+            const swipeDistance = touchEndX - touchStartX;
+            const threshold = 60;
+            if (swipeDistance < -threshold) nextCard();
+            else if (swipeDistance > threshold) prevCard();
+        }
+
+        // --- Core Logic ---
+        function init() {
+            renderCard();
+            updateStats();
+            
+            document.getElementById('card-trigger').onclick = toggleFlip;
+            nextBtn.onclick = nextCard;
+            shuffleToggle.onclick = toggleShuffle;
+            document.getElementById('mark-known').onclick = markKnown;
+            document.getElementById('mark-review').onclick = markReview;
+
+            swipeArea.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, {passive: true});
+
+            swipeArea.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, {passive: true});
+        }
+
+        function renderCard() {
+            const item = deck[currentIdx];
+            frontText.textContent = item.hebrew;
+            backEnglish.textContent = item.english;
+            backPhonetic.textContent = item.phonetic;
+            cardElement.classList.remove('is-flipped');
+            isFlipped = false;
+        }
+
+        function toggleFlip() {
+            isFlipped = !isFlipped;
+            cardElement.classList.toggle('is-flipped', isFlipped);
+        }
+
+        function nextCard() {
+            currentIdx = (currentIdx + 1) % deck.length;
+            if (currentIdx === 0) showStatus("Restarting Deck");
+            renderCard();
+            updateStats();
+        }
+
+        function prevCard() {
+            currentIdx = (currentIdx - 1 + deck.length) % deck.length;
+            renderCard();
+            updateStats();
+        }
+
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            shuffleToggle.textContent = `Shuffle: ${isShuffle ? 'On' : 'Off'}`;
+            shuffleToggle.classList.toggle('active', isShuffle);
+            
+            if (isShuffle) {
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+                const reviewItems = deck.filter(item => reviewIds.has(item.id));
+                const otherItems = deck.filter(item => !reviewIds.has(item.id));
+                deck = [...reviewItems, ...otherItems];
+            } else {
+                deck = [...vocabulary];
+            }
+            currentIdx = 0;
+            renderCard();
+            updateStats();
+        }
+
+        function markKnown() {
+            const item = deck[currentIdx];
+            knownIds.add(item.id);
+            reviewIds.delete(item.id);
+            showStatus("Got it!");
+            nextCard();
+        }
+
+        function markReview() {
+            const item = deck[currentIdx];
+            reviewIds.add(item.id);
+            knownIds.delete(item.id);
+            showStatus("Review later");
+            nextCard();
+        }
+
+        function updateStats() {
+            statsDisplay.textContent = `Card ${currentIdx + 1} of ${deck.length} • ${reviewIds.size} Review`;
+        }
+
+        function showStatus(text) {
+            statusMsg.textContent = text;
+            statusMsg.style.display = 'block';
+            setTimeout(() => { statusMsg.style.display = 'none'; }, 1500);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
